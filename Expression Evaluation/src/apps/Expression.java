@@ -48,43 +48,36 @@ public class Expression {
      */
     public void buildSymbols() {
     		/** COMPLETE THIS METHOD **/
-    	scalars = new ArrayList <ScalarSymbol>();
-    	arrays = new ArrayList <ArraySymbol>();
-        Stack <String> symbols = new Stack <String>();
-        StringTokenizer st = new StringTokenizer(expr, delims, true);       
-        String token = "";
-        
-        while (st.hasMoreTokens())
-        {
-	        token = st.nextToken();
-	        if ((token.charAt(0) >= 'a' && token.charAt(0) <= 'z') || (token.charAt(0) >= 'A' && token.charAt(0) <= 'Z' || token.equals("(") || token.equals("[") ))
-	                symbols.push(token);	        
-        }
-        while(!symbols.isEmpty())
-        {
-	        token = symbols.pop();
-	        if (token.equals("]"))
-	        {
-	            token = symbols.pop();
-	            ArraySymbol aSymbol = new ArraySymbol(token);
-	            if(arrays.indexOf(aSymbol) == -1)
-	            	arrays.add(aSymbol);
-	        }
-	       else 
-	        	 /*if (token.equals("["))
-	        	 {
-	        		 
-	        	 }*/
-	        	
-	        {
-	            ScalarSymbol sSymbol = new ScalarSymbol(token);
-	            if (scalars.indexOf(sSymbol) == -1)
-	            	scalars.add(sSymbol);
+    	scalars = new ArrayList<ScalarSymbol>();
+        arrays = new ArrayList<ArraySymbol>();
+        Stack<String> letters = new Stack();
+        String chars = "";
+        StringTokenizer toke = new StringTokenizer(expr, delims, true);
+        while (toke.hasMoreTokens()) {
+            chars = toke.nextToken();
+            if (Pattern.matches("[a-zA-Z]+", chars)/*Character.isLetter(chars.charAt(0))*/ || chars.equals("[")) {//checks if letter or for array beginning
+                letters.push(chars);
             }
         }
-        System.out.println(arrays);
-        System.out.println(scalars);
-    }
+            while (letters.isEmpty() == false)
+            {
+                chars = letters.pop();
+                if (chars.equals("["))
+                {
+                    chars = letters.pop();//gets token before bracket which is the Array name
+                    ArraySymbol ARRAY = new ArraySymbol(chars);
+                    if(arrays.indexOf(ARRAY) == -1)//makes sure its not already in array
+                        arrays.add(ARRAY);
+                }
+                else
+                {
+                    ScalarSymbol SCALAR = new ScalarSymbol(chars);//else its a scalar
+                    if (scalars.indexOf(SCALAR) == -1)
+                        scalars.add(SCALAR);
+                }
+            }
+        }
+   
     
     /**
      * Loads values for symbols in the expression
@@ -132,156 +125,207 @@ public class Expression {
      */
     public float evaluate() {
     		/** COMPLETE THIS METHOD **/
-    		// following line just a placeholder for compilation
-    		//return 0;
-    	 return evaluate(expr, expr.length()-1);
-    }
-    private float evaluate(String expression, int exprEndIndex)
-    {
-        Stack <String> operators = new Stack <String>();
-        Stack <Float> values = new Stack <Float>();
-        StringTokenizer st = new StringTokenizer(expression, delims, true);
-        String token = "";      
-        float constant = 0;
-        float scalarValue = 0;
-        float bracketValue = 0;
-        float parenSolution = 0;
-        float arrayLoc = 0;
-        String letters = "";
-        ArrayList<Integer> openingBracketIndex = new ArrayList <Integer>();
-        ArrayList<Integer> closingBracketIndex = new ArrayList <Integer>();
-        int bracketCount = 0;
-        String check = "";
-       
-        
-        while (st != null) 
-        {
-        	if (!st.hasMoreTokens())
-        		break;
-	        token = st.nextToken();
-	        if(token.equals("(")||token.equals("["))
-	        {
-	            int sbi = openingBracketIndex.get((bracketCount));
-	            int ebi = closingBracketIndex.get(bracketCount);
-	            bracketCount++;
-	            parenSolution = evaluate(expr.substring(sbi+1, ebi), ebi-1);
-                if (token.equals("["))
-                {
-                	
-                	/*check = st.nextToken();
-                	while(!check.equals("]"))
-                	{
-                		if ((token.charAt(0) >= 'a' && token.charAt(0) <= 'z'))
-            	        {
-            	        	letters = token;    
-            	        	ScalarSymbol sSymbol = new ScalarSymbol(token);
-                            int ssi = scalars.indexOf(sSymbol);
-                            scalarValue = scalars.get(ssi).value;
-                            values.push(scalarValue);
-                            checkDivMult(operators, values);
-            	        }
-            	        else if((token.charAt(0) >= 'A' && token.charAt(0) <= 'Z'))
-            	        	letters = token;	       
-            	        else if (token.equals("+") || token.equals("-") || token.equals("/") || token.equals("*"))
-            	                operators.push(token);
-            	        else 
-            	        {
-            	        	constant = Integer.parseInt(token);
-                            values.push(constant);
-                            checkDivMult(operators, values);
-                            float sol = values.peek();
-                            int sols = (int)sol;   
-            	        }
-                		
-                	}*/
-    
-                	
-                
-                	for(int i = 0; i < arrays.size(); i++)
-                	{
-                		if(arrays.get(i).name.equals(letters))
-	                			arrayLoc = i;
-                	}
-                	int[] arrayvalues = arrays.get((int)arrayLoc).values;
-                	bracketValue = arrayvalues[(int)parenSolution];
-                	//bracketValue = arrayvalues[sols];
-                	values.push(bracketValue);
+        expr = expr.replaceAll("\\s+","");//removes spaces
+        StringTokenizer st = new StringTokenizer(expr,delims,true);
+        String name = "";
+        String tokenss = "";
+        while(st.hasMoreElements()) {//this loop checks and replaces scalars but leaves arrays alone
+            tokenss = st.nextToken();
+            if (Pattern.matches("[a-zA-Z]+", tokenss)) {
+                name = tokenss;
+            }
+            if (tokenss.equals("+") || tokenss.equals("/") || tokenss.equals("*") || tokenss.equals("-")||!st.hasMoreElements()) {
+                int p = 0;
+                while (p < scalars.size()) {
+                    if (scalars.get(p).name.equals(name)) {
+
+                        expr = expr.replaceFirst(name, scalars.get(p).value + "");//uses replace first as to not mess up arrays or other scalars with similar name
+                    }
+                    p++;
                 }
-                else
-                	values.push(parenSolution);
-                if (ebi == exprEndIndex)
-                  st = null;
-                else
-                  st = new StringTokenizer(expr.substring(ebi + 1, exprEndIndex + 1), delims, true);
-	        }
-	        else if ((token.charAt(0) >= 'a' && token.charAt(0) <= 'z'))
-	        {
-	        	letters = token;    
-	        	ScalarSymbol sSymbol = new ScalarSymbol(token);
-                int ssi = scalars.indexOf(sSymbol);
-                scalarValue = scalars.get(ssi).value;
-                values.push(scalarValue);
-                checkDivMult(operators, values);
-	        }
-	        else if((token.charAt(0) >= 'A' && token.charAt(0) <= 'Z'))
-	        	letters = token;	       
-	        else if (token.equals("+") || token.equals("-") || token.equals("/") || token.equals("*"))
-	                operators.push(token);
-	        else 
-	        {
-	        	constant = Integer.parseInt(token);
-                values.push(constant);
-                checkDivMult(operators, values);
-	        }
+            }
+            if (tokenss.equals("[")) {
+                name = "";
+            }
         }
-        if (operators.isEmpty())
-        	return values.pop();
-        
-        Stack <Float> revVal = new Stack <Float>();
-        Stack <String> revOp = new Stack <String>();
-        while (!operators.isEmpty())
-                revOp.push(operators.pop());
-        while(!values.isEmpty())
-                revVal.push(values.pop());
-        while (!revOp.isEmpty())
-                processStack(revOp, revVal, false);
-        return revVal.pop();
+        return evaluate(expr);
+
     }
-    private void checkDivMult(Stack <String> operators, Stack <Float> values)
+
+    private float evaluate(String expression)//this method eliminates the parenthesis and gets the values for arrays
     {
-        if (!operators.isEmpty())
         {
-			String topOp = operators.peek();
-			if (topOp.equals("/") || topOp.equals("*"))
-				processStack(operators, values, true);
+            System.out.println(expression);//prints the new expression after dealing with parenthesis and brackets
+            int parenth = 0;//keeps track of parenthesis
+            int bracket = 0;//keeps track of brackets
+            StringTokenizer st = new StringTokenizer(expression, delims, true);
+            int i = 0;
+            int arrnamebegin = 0;
+            String arr = "";//array name placeholder
+            whileTop:
+            while (st.hasMoreElements()) {
+                String tok = st.nextToken();
+                if (Character.isLetter(tok.charAt(0)))//tok.charAt(0) >= 'a' && tok.charAt(0) <= 'Z'
+                {
+                    arrnamebegin = i;
+                    arr = tok;
+                    i += tok.length();
+                    continue;
+                }
+                switch (tok) {
+                    case "(":
+                        parenth = i + 1;
+                        i++;
+                        continue;
+                    case ")":
+                        float value = 0;
+                        value = (evaluate(expression.substring(parenth, i)));
+                        String Svalue = Float.toString(value);
+                        expression = expression.substring(0, parenth - 1) + Svalue + expression.substring(i + 1);
+                        expression = Float.toString(evaluate(expression));
+                        i++;
+                        break whileTop;//breaks to just before while loop
+                    case "[":
+                        bracket = i + 1;
+                        i++;
+                        continue;
+                    case "]":
+                        int values = 0;
+                        values = (int) (Math.floor(evaluate(expression.substring(bracket, i))));//converts float to int and truncates to avoid array error
+                        int arrvalue = 0;
+                        for (int p = 0; p < arrays.size(); p++) {
+                            if (arrays.get(p).name.equals(arr)) {
+                                arrvalue = arrays.get(p).values[values];
+                            }
+                        }
+                        String SBvalue = Float.toString(arrvalue);
+                        expression = expression.substring(0, arrnamebegin) + SBvalue + expression.substring(i + 1);
+                        expression = Float.toString(evaluate(expression));
+                        i++;
+                        break whileTop;
+
+                    default:
+                        i += tok.length();
+                        break;
+                }
+            }
         }
+        String negative = "";//String to check if it is negative at the end
+        final String delimwithend = " \t*+-/()[]|";//new deliminator that contains expression end symbol "|"
+        Stack<String> OPS = new Stack<>();
+        Stack<Float> values = new Stack<>();
+        if (expression.charAt(expression.length()-1) != '|') {//adds the expression end symbol if it is not there
+            expression = expression + "|";
+        }
+        StringTokenizer st = new StringTokenizer(expression,delimwithend,true);
+        int i = 0;
+        String last = "";
+        while(st.hasMoreElements()){
+            String tok = st.nextToken();
+            if (tok.equals("+") || tok.equals("-") || tok.equals("*") || tok.equals("/") || tok.equals("|"))
+            {
+                if(i == 0 && tok.equals("-"))//if first sign is "-", this means the answer is negative
+                {
+                    negative = "yes";
+                    continue;
+                }
+                if(!tok.equals("|") && last.equals("+") || last.equals("-") || last.equals("*") || last.equals("/"))
+                {
+                    negative = "yes";
+                    continue;
+                }
+                negative = "";
+                OPS.push(tok);
+                i++;
+                last = tok;
+            }
+            else
+            {
+                if(negative.equals("yes"))
+                {
+                    Float temp = (Float.parseFloat(tok))*-1;
+                    values.push(temp);
+                    last = tok;
+                    i++;
+                }
+                else {
+                    values.push(Float.parseFloat(tok));
+                    i++;
+                    last = tok;
+                }
+            }
+
+            Solve(values, OPS);
+        }
+        float answer;
+        answer = values.pop();
+        return answer;
+
     }
-    private void processStack(Stack <String> operators, Stack <Float> values, boolean inOrder)
+
+    private void Solve(Stack<Float> values, Stack<String> OPS)
     {
-    	String topOp = operators.pop();
-        float temp1 = 0;
-        float temp2 = 0;
-        float solution = 0;
-        if (inOrder)
+        while(OPS.size()>=2)//this includes operators and the expression end symbol
         {
-        	temp2 = values.pop();
-            temp1 = values.pop();
+        	int opp1 = 0, opp2 = 0;//giving priority to operators through int values
+            String op1 = OPS.pop();
+            String op2 = OPS.pop();
+            switch (op1) {
+                case "*":
+                case "/":
+                    opp1 = 3;
+                    break;
+                case "+":
+                case "-":
+                    opp1 = 2;
+                    break;
+                case "|":
+                    opp1 = 1;
+                default:
+            }
+            switch (op2) {
+                case "*":
+                case "/":
+                    opp2 = 3;
+                    break;
+                case "+":
+                case "-":
+                    opp2 = 2;
+                    break;
+                case "|":
+                    opp2 = 1;
+                default:
+            }
+            if (opp1 <= opp2) {//performs operations in order of highest priority, which is operation 2
+                float  value1 = values.pop();
+                float  value2 = values.pop();
+                float answer = 0;
+                switch (op2) {
+                    case "+":
+                        answer = (value2 + value1);
+                        break;
+                    case "-":
+                        answer = (value2 - value1);
+                        break;
+                    case "*":
+                        answer = (value2 * value1);
+                        break;
+                    case "/":
+                        answer = (value2 / value1);
+                        break;
+                    default:
+                }
+                values.push(answer);
+                OPS.push(op1);//pushes back operator that is not used
+            }
+            else {//no operations need to be immediately handled (low priority)
+                OPS.push(op1);
+                OPS.push(op2);
+                return;
+
+            }
         }
-        else
-        {
-            temp1 = values.pop();
-            temp2 = values.pop();
-        }
-        if (topOp.equals("/"))
-            solution = temp1 / temp2;       
-        else if (topOp.equals("*"))
-        	solution = temp1 * temp2;
-        else if (topOp.equals("+"))
-            solution = temp1 + temp2;
-        else if (topOp.equals("-"))  
-            solution = temp1 - temp2;
-        values.push(solution);
-        //return solution;
+
     }
 
     /**
