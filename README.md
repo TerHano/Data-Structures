@@ -1,2 +1,2 @@
 # Data-Structures
-Class assignments
+Rutgers Class Assignments (2017)
